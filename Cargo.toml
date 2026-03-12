@@ -1,6 +1,6 @@
 [package]
-name = "hackatime-cli"
-version = "0.1.0"
+name = "hackatime"
+version = "0.1.1"
 edition = "2024"
 description = "Terminal CLI for viewing Hackatime stats with OAuth login"
 readme = "README.md"
