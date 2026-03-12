@@ -4,7 +4,7 @@ A Rust terminal app that signs into Hackatime with OAuth PKCE and prints a simpl
 
 ## Install
 
-- From crates.io: `cargo install hackatime-cli`
+- From crates.io: `cargo install hackatime`
 - Then run: `hackatime`
 
 ## Commands
