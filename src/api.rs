@@ -5,15 +5,17 @@ use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 use crate::models::{
-    DashboardData, DurationResponse, Heartbeat, LanguageLine, ProjectsResponse, StatLine,
-    UserProfile, UserStatsResponse,
+    DashboardData, DashboardLayout, DurationResponse, Heartbeat, LanguageLine, ProjectsResponse,
+    StatLine, StreakResponse, UserProfile, UserStatsResponse,
 };
 
 const API_BASE_URL: &str = "https://hackatime.hackclub.com/api/v1";
+const NOT_AVAILABLE: &str = "N/A";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum ReportMode {
     Summary,
+    Fetch,
     Current,
     Day,
     Week,
@@ -48,6 +50,7 @@ impl HackatimeClient {
     pub async fn fetch_dashboard(&self, mode: ReportMode) -> Result<DashboardData> {
         match mode {
             ReportMode::Summary => self.fetch_summary_report().await,
+            ReportMode::Fetch => self.fetch_fetch_report().await,
             ReportMode::Current => self.fetch_current_project_report().await,
             ReportMode::Day => self.fetch_range_report(TimeRange::Day).await,
             ReportMode::Week => self.fetch_range_report(TimeRange::Week).await,
@@ -55,6 +58,10 @@ impl HackatimeClient {
             ReportMode::Year => self.fetch_range_report(TimeRange::Year).await,
             ReportMode::Lifetime => self.fetch_range_report(TimeRange::Lifetime).await,
         }
+    }
+
+    pub async fn fetch_named_project_report(&self, project_name: &str) -> Result<DashboardData> {
+        self.fetch_project_report(project_name).await
     }
 
     async fn fetch_summary_report(&self) -> Result<DashboardData> {
@@ -76,6 +83,7 @@ impl HackatimeClient {
 
         Ok(DashboardData {
             title: "Hackatime Stats".to_string(),
+            layout: DashboardLayout::Standard,
             stats: vec![
                 StatLine {
                     label: "Total Hours Today".to_string(),
@@ -103,6 +111,88 @@ impl HackatimeClient {
         })
     }
 
+    async fn fetch_fetch_report(&self) -> Result<DashboardData> {
+        let (
+            profile,
+            latest_heartbeat,
+            streak,
+            top_project,
+            total_today,
+            total_week,
+            total_month,
+            total_year,
+            total_lifetime,
+        ) = tokio::try_join!(
+            self.get::<UserProfile>("/authenticated/me"),
+            self.get_optional::<Heartbeat>("/authenticated/heartbeats/latest"),
+            self.get_optional::<StreakResponse>("/authenticated/streak"),
+            self.fetch_top_project(),
+            self.fetch_hours_for_range(TimeRange::Day),
+            self.fetch_hours_for_range(TimeRange::Week),
+            self.fetch_hours_for_range(TimeRange::Month),
+            self.fetch_hours_for_range(TimeRange::Year),
+            self.fetch_hours_for_range(TimeRange::Lifetime),
+        )?;
+
+        let languages = if let Some(user_id) = profile.id {
+            self.fetch_language_breakdown(user_id, TimeRange::Lifetime, None)
+                .await?
+        } else {
+            Vec::new()
+        };
+
+        let current_project = latest_heartbeat
+            .and_then(|heartbeat| heartbeat.project)
+            .unwrap_or_else(|| "Unavailable".to_string());
+        let current_streak = streak
+            .map(|streak| streak.display())
+            .unwrap_or_else(|| "Unavailable".to_string());
+        let fetch_title = profile.display_name();
+
+        let stats = vec![
+            StatLine {
+                label: "Current Project".to_string(),
+                value: current_project,
+            },
+            StatLine {
+                label: "Current Streak".to_string(),
+                value: current_streak,
+            },
+            StatLine {
+                label: "Top Project".to_string(),
+                value: top_project,
+            },
+            StatLine {
+                label: "Today".to_string(),
+                value: total_today.display(),
+            },
+            StatLine {
+                label: "This Week".to_string(),
+                value: total_week.display(),
+            },
+            StatLine {
+                label: "This Month".to_string(),
+                value: total_month.display(),
+            },
+            StatLine {
+                label: "This Year".to_string(),
+                value: total_year.display(),
+            },
+            StatLine {
+                label: "Lifetime".to_string(),
+                value: total_lifetime.display(),
+            },
+        ];
+
+        Ok(DashboardData {
+            title: fetch_title,
+            layout: DashboardLayout::Fetch,
+            stats,
+            languages_title: Some("Languages Lifetime".to_string()),
+            languages,
+        })
+    }
+
     async fn fetch_range_report(&self, range: TimeRange) -> Result<DashboardData> {
         let (profile, total) = tokio::try_join!(
             self.get::<UserProfile>("/authenticated/me"),
@@ -117,6 +207,7 @@ impl HackatimeClient {
 
         Ok(DashboardData {
             title: "Hackatime Stats".to_string(),
+            layout: DashboardLayout::Standard,
             stats: vec![StatLine {
                 label: range.total_label().to_string(),
                 value: total.display(),
@@ -127,14 +218,14 @@ impl HackatimeClient {
     }
 
     async fn fetch_current_project_report(&self) -> Result<DashboardData> {
-        let (profile, latest_heartbeat) = tokio::try_join!(
-            self.get::<UserProfile>("/authenticated/me"),
-            self.get_optional::<Heartbeat>("/authenticated/heartbeats/latest"),
-        )?;
+        let latest_heartbeat = self
+            .get_optional::<Heartbeat>("/authenticated/heartbeats/latest")
+            .await?;
 
         let Some(project_name) = latest_heartbeat.and_then(|heartbeat| heartbeat.project) else {
             return Ok(DashboardData {
                 title: "Hackatime Stats".to_string(),
+                layout: DashboardLayout::Standard,
                 stats: vec![StatLine {
                     label: "Current Project".to_string(),
                     value: "Unavailable".to_string(),
@@ -144,42 +235,7 @@ impl HackatimeClient {
             });
         };
 
-        let (project_total, project_today, languages) = tokio::try_join!(
-            self.fetch_project_total(&project_name),
-            self.fetch_project_total_for_range(&project_name, TimeRange::Day),
-            async {
-                if let Some(user_id) = profile.id {
-                    self.fetch_language_breakdown(
-                        user_id,
-                        TimeRange::Lifetime,
-                        Some(project_name.as_str()),
-                    )
-                    .await
-                } else {
-                    Ok(Vec::new())
-                }
-            }
-        )?;
-
-        Ok(DashboardData {
-            title: "Hackatime Stats".to_string(),
-            stats: vec![
-                StatLine {
-                    label: "Current Project".to_string(),
-                    value: project_name.clone(),
-                },
-                StatLine {
-                    label: "Total Hours On Project".to_string(),
-                    value: project_total,
-                },
-                StatLine {
-                    label: "Hours On Project Today".to_string(),
-                    value: project_today,
-                },
-            ],
-            languages_title: Some("Languages In Current Project".to_string()),
-            languages,
-        })
+        self.fetch_project_report(&project_name).await
     }
 
     async fn fetch_hours_for_range(&self, range: TimeRange) -> Result<DurationResponse> {
@@ -239,19 +295,11 @@ impl HackatimeClient {
     }
 
     async fn fetch_project_total(&self, project_name: &str) -> Result<String> {
-        let response = self
-            .get_with_query::<ProjectsResponse>(
-                "/authenticated/projects",
-                &[("projects", project_name.to_string())],
-            )
-            .await?;
-
-        Ok(response
-            .projects
-            .into_iter()
-            .find(|project| project.name.as_deref() == Some(project_name))
+        Ok(self
+            .fetch_project_summary(project_name, None)
+            .await?
             .map(|project| project.display_time())
-            .unwrap_or_else(|| "Unavailable".to_string()))
+            .unwrap_or_else(|| NOT_AVAILABLE.to_string()))
     }
 
     async fn fetch_project_total_for_range(
@@ -259,27 +307,131 @@ impl HackatimeClient {
         project_name: &str,
         range: TimeRange,
     ) -> Result<String> {
-        let (start, mut end) = range.date_bounds()?;
-        if matches!(range, TimeRange::Day) {
-            end = tomorrow_date_string()?;
-        }
+        let project = self
+            .fetch_project_summary(project_name, Some(range))
+            .await?;
+        Ok(project
+            .map(|project| project.display_time())
+            .unwrap_or_else(|| NOT_AVAILABLE.to_string()))
+    }
+
+    async fn fetch_top_project(&self) -> Result<String> {
         let response = self
-            .get_with_query::<ProjectsResponse>(
-                "/authenticated/projects",
-                &[
-                    ("projects", project_name.to_string()),
-                    ("start_date", start),
-                    ("end_date", end),
-                ],
-            )
+            .get_with_query::<ProjectsResponse>("/authenticated/projects", &[])
             .await?;
 
         Ok(response
             .projects
             .into_iter()
-            .find(|project| project.name.as_deref() == Some(project_name))
-            .map(|project| project.display_time())
-            .unwrap_or_else(|| "Unavailable".to_string()))
+            .filter_map(|project| {
+                let total_seconds = project.total_seconds?;
+                if total_seconds <= 0.0 {
+                    return None;
+                }
+
+                let time = project.display_time();
+                let name = project.name?;
+                Some((total_seconds, name, time))
+            })
+            .max_by(|left, right| left.0.total_cmp(&right.0))
+            .map(|(_, name, time)| format!("{name} ({time})"))
+            .unwrap_or_else(|| NOT_AVAILABLE.to_string()))
+    }
+
+    async fn fetch_project_report(&self, project_name: &str) -> Result<DashboardData> {
+        let profile = self.get::<UserProfile>("/authenticated/me").await?;
+        let (project_total, project_today, languages) = tokio::try_join!(
+            self.fetch_project_total(project_name),
+            self.fetch_project_total_for_range(project_name, TimeRange::Day),
+            async {
+                if let Some(user_id) = profile.id {
+                    self.fetch_language_breakdown(user_id, TimeRange::Lifetime, Some(project_name))
+                        .await
+                } else {
+                    Ok(Vec::new())
+                }
+            }
+        )?;
+
+        let project_exists = project_total != NOT_AVAILABLE || project_today != NOT_AVAILABLE;
+        let stats = if project_exists {
+            vec![
+                StatLine {
+                    label: "Project".to_string(),
+                    value: project_name.to_string(),
+                },
+                StatLine {
+                    label: "Total Hours On Project".to_string(),
+                    value: project_total,
+                },
+                StatLine {
+                    label: "Hours On Project Today".to_string(),
+                    value: project_today,
+                },
+            ]
+        } else {
+            vec![
+                StatLine {
+                    label: "Project".to_string(),
+                    value: project_name.to_string(),
+                },
+                StatLine {
+                    label: "Status".to_string(),
+                    value: "Not found in your Hackatime projects".to_string(),
+                },
+            ]
+        };
+
+        Ok(DashboardData {
+            title: "Hackatime Stats".to_string(),
+            layout: DashboardLayout::Standard,
+            stats,
+            languages_title: if project_exists {
+                Some("Languages In Project".to_string())
+            } else {
+                None
+            },
+            languages: if project_exists {
+                languages
+            } else {
+                Vec::new()
+            },
+        })
+    }
+
+    async fn fetch_project_summary(
+        &self,
+        project_name: &str,
+        range: Option<TimeRange>,
+    ) -> Result<Option<crate::models::ProjectSummary>> {
+        let (start, mut end) = match range {
+            Some(range) => {
+                let (start, end) = range.date_bounds()?;
+                (Some(start), Some(end))
+            }
+            None => (None, None),
+        };
+
+        if matches!(range, Some(TimeRange::Day)) {
+            end = Some(tomorrow_date_string()?);
+        }
+
+        let mut params = vec![("projects", project_name.to_string())];
+        if let Some(start) = start {
+            params.push(("start_date", start));
+        }
+        if let Some(end) = end {
+            params.push(("end_date", end));
+        }
+
+        let response = self
+            .get_with_query::<ProjectsResponse>("/authenticated/projects", &params)
+            .await?;
+
+        Ok(response
+            .projects
+            .into_iter()
+            .find(|project| project.name.as_deref() == Some(project_name)))
     }
 
     async fn get<T>(&self, path: &str) -> Result<T>

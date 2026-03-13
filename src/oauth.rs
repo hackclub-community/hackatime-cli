@@ -19,6 +19,156 @@ use crate::config::AppConfig;
 
 const AUTHORIZE_URL: &str = "https://hackatime.hackclub.com/oauth/authorize";
 const TOKEN_URL: &str = "https://hackatime.hackclub.com/oauth/token";
+const OAUTH_SUCCESS_HTML: &str = r#"<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hackatime Terminal Viewer</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #141617;
+      --panel: #1d2021;
+      --panel-soft: #282828;
+      --line: #3c3836;
+      --text: #fbf1c7;
+      --muted: #bdae93;
+      --primary: #d8a657;
+      --primary-strong: #e78a4e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, #111314 0%, var(--bg) 100%);
+      color: var(--text);
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    }
+
+    main {
+      width: min(92vw, 46rem);
+      padding: 2.5rem;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, var(--panel) 0%, #181b1c 100%);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow:
+        0 14px 48px rgba(0, 0, 0, 0.35),
+        0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 1rem 1.25rem;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .dot {
+      width: 0.72rem;
+      height: 0.72rem;
+      border-radius: 999px;
+    }
+
+    .dot-primary {
+      background: var(--primary);
+    }
+
+    .dot-warm {
+      background: var(--primary-strong);
+    }
+
+    .dot-soft {
+      background: #89b482;
+    }
+
+    .content {
+      padding: 2.25rem 2rem;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0 0 1rem;
+      padding: 0.42rem 0.72rem;
+      border: 1px solid rgba(216, 166, 87, 0.28);
+      border-radius: 999px;
+      background: rgba(216, 166, 87, 0.08);
+      color: var(--primary);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 0 0 0.75rem;
+      font-size: clamp(2.1rem, 4vw, 3.6rem);
+      line-height: 1.02;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+    }
+
+    p {
+      margin: 0;
+      max-width: 36rem;
+      color: var(--muted);
+      font-size: 1.02rem;
+      line-height: 1.7;
+    }
+
+    .rule {
+      width: 100%;
+      height: 1px;
+      margin: 1.5rem 0;
+      background: linear-gradient(90deg, var(--primary), rgba(216, 166, 87, 0.12) 72%, transparent 100%);
+    }
+
+    strong {
+      color: var(--text);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="card">
+      <div class="topbar">
+        <span class="dot dot-primary"></span>
+        <span class="dot dot-warm"></span>
+        <span class="dot dot-soft"></span>
+      </div>
+      <div class="content">
+        <p class="eyebrow">OAuth Complete</p>
+        <h1>Hackatime Terminal Viewer</h1>
+        <div class="rule"></div>
+        <p><strong>You're signed in.</strong> You can close this tab and return to the terminal to see your stats.</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
+"#;
 
 #[derive(Debug, Clone)]
 pub struct PkcePair {
@@ -168,9 +318,7 @@ async fn handle_callback(
         let _ = sender.send(result);
     }
 
-    Html(
-        "<h1>Hackatime Terminal Viewer</h1><p>You can close this tab and return to the terminal.</p>",
-    )
+    Html(OAUTH_SUCCESS_HTML)
 }
 
 async fn exchange_code(config: &AppConfig, code: &str, verifier: &str) -> Result<String> {
