@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hackatime Terminal Viewer</title>
+  <meta
+    name="description"
+    content="A minimalist terminal viewer for Hackatime with OAuth, graphs, projects, and quick stats."
+  >
+  <link rel="icon" href="https://assets.hackclub.com/icon-rounded.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="landing-page">
+  <div class="site-shell">
+    <header class="topbar">
+      <a class="brand" href="./index.html">Hackatime Terminal Viewer</a>
+      <nav class="nav">
+        <a href="./docs.html">Docs</a>
+        <a href="https://github.com/hackclub-community/hackatime-cli" target="_blank" rel="noreferrer">Repo</a>
+      </nav>
+    </header>
+
+    <main class="hero hero-solo">
+      <section class="hero-copy">
+        <p class="eyebrow">Rust CLI for Hackatime</p>
+        <h1>Your stats.</h1>
+        <p class="lede">View hackatime stats in your terminal. </p>
+
+        <div class="actions">
+          <a class="button button-primary" href="./docs.html">Open Docs</a>
+          <a class="button" href="https://github.com/hackclub-community/hackatime-cli" target="_blank" rel="noreferrer">View Repo</a>
+        </div>
+
+        <div class="install-pill">
+          <span>Install</span>
+          <code id="hero-install-command">cargo install hackatime</code>
+          <button
+            class="copy-button"
+            type="button"
+            data-copy-target="hero-install-command"
+            aria-label="Copy install command"
+          >
+            Copy
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script>
+    for (const button of document.querySelectorAll("[data-copy-target]")) {
+      button.addEventListener("click", async () => {
+        const target = document.getElementById(button.dataset.copyTarget);
+        if (!target) return;
+
+        try {
+          await navigator.clipboard.writeText(target.textContent.trim());
+          const originalLabel = button.textContent;
+          button.textContent = "Copied";
+          window.setTimeout(() => {
+            button.textContent = originalLabel;
+          }, 1200);
+        } catch {
+          button.textContent = "Failed";
+          window.setTimeout(() => {
+            button.textContent = "Copy";
+          }, 1200);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

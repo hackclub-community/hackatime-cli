@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hackatime Terminal Viewer Docs</title>
+  <meta
+    name="description"
+    content="Install, commands, settings, and feature documentation for Hackatime Terminal Viewer."
+  >
+  <link rel="icon" href="https://assets.hackclub.com/icon-rounded.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="docs-page">
+  <div class="site-shell site-shell-docs">
+    <header class="topbar">
+      <a class="brand" href="./index.html">Hackatime Terminal Viewer</a>
+      <nav class="nav">
+        <a href="./index.html">Home</a>
+        <a href="https://github.com/hackclub-community/hackatime-cli" target="_blank" rel="noreferrer">Repo</a>
+      </nav>
+    </header>
+
+    <main class="docs-shell">
+      <aside class="docs-sidebar">
+        <h1>Documentation</h1>
+        <p>Reference for installing and using the Hackatime terminal viewer.</p>
+        <nav class="docs-nav" aria-label="Documentation sections">
+          <a href="#installation">Installation</a>
+          <a href="#quick-start">Quick Start</a>
+          <a href="#views">Views</a>
+          <a href="#ranges">Ranges</a>
+          <a href="#lookup">Lookup</a>
+          <a href="#settings">Settings</a>
+        </nav>
+      </aside>
+
+      <article class="docs-content">
+        <section class="doc-section" id="installation">
+          <h2>Installation</h2>
+          <p>Install the binary from crates.io, then run it.</p>
+          <div class="code-block code-block-action">
+            <code id="install-command">cargo install hackatime</code>
+            <button
+              class="copy-button"
+              type="button"
+              data-copy-target="install-command"
+              aria-label="Copy install command"
+            >
+              Copy
+            </button>
+          </div>
+          <div class="code-block">
+            <code>hackatime</code>
+          </div>
+        </section>
+
+        <section class="doc-section" id="quick-start">
+          <h2>Quick Start</h2>
+          <ol class="docs-list">
+            <li>Run <code>hackatime</code>.</li>
+            <li>Complete the browser-based sign-in flow.</li>
+            <li>Return to the terminal after authentication finishes.</li>
+          </ol>
+        </section>
+
+        <section class="doc-section" id="views">
+          <h2>Views</h2>
+          <div class="command-table" role="table" aria-label="View commands">
+            <div class="command-row" role="row">
+              <div class="command-name" role="cell"><code>hackatime</code></div>
+              <div class="command-description" role="cell">Shows the multi-range summary and lifetime languages.</div>
+            </div>
+            <div class="command-row" role="row">
+              <div class="command-name" role="cell"><code>hackatime --fetch</code></div>
+              <div class="command-description" role="cell">Shows a neofetch-style overview.</div>
+            </div>
+            <div class="command-row" role="row">
+              <div class="command-name" role="cell"><code>hackatime --graph</code></div>
+              <div class="command-description" role="cell">Shows a coding heatmap for the last 365 days.</div>
+            </div>
+            <div class="command-row" role="row">
+              <div class="command-name" role="cell"><code>hackatime --projects</code></div>
+              <div class="command-description" role="cell">Shows top projects with per-project language graphs and a key.</div>
+            </div>
+            <div class="command-row" role="row">
+              <div class="command-name" role="cell"><code>hackatime --current</code></div>
+              <div class="command-description" role="cell">Shows the current project report.</div>
+            </div>
+            <div class="command-row" role="row">
+              <div class="command-name" role="cell"><code>hackatime .</code></div>
+              <div class="command-description" role="cell">Shows stats for the current folder when it matches a Hackatime project.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="doc-section" id="ranges">
+          <h2>Ranges</h2>
+          <div class="command-table" role="table" aria-label="Range commands">
+            <div class="command-row" role="row">
+              <div class="command-name" role="cell"><code>hackatime --today</code></div>
+              <div class="command-description" role="cell">Shows today's total and language breakdown.</div>
+            </div>
+            <div class="command-row" role="row">
+              <div class="command-name" role="cell"><code>hackatime --week</code></div>
+              <div class="command-description" role="cell">Shows this week's total and language breakdown.</div>
+            </div>
+            <div class="command-row" role="row">
+              <div class="command-name" role="cell"><code>hackatime --month</code></div>
+              <div class="command-description" role="cell">Shows this month's total and language breakdown.</div>
+            </div>
+            <div class="command-row" role="row">
+              <div class="command-name" role="cell"><code>hackatime --year</code></div>
+              <div class="command-description" role="cell">Shows this year's total and language breakdown.</div>
+            </div>
+            <div class="command-row" role="row">
+              <div class="command-name" role="cell"><code>hackatime --lifetime</code></div>
+              <div class="command-description" role="cell">Shows lifetime total and language breakdown.</div>
+            </div>
+            <div class="command-row" role="row">
+              <div class="command-name" role="cell"><code>hackatime --projects --week|--month|--year|--lifetime</code></div>
+              <div class="command-description" role="cell">Scopes the projects view to a selected range.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="doc-section" id="lookup">
+          <h2>Lookup</h2>
+          <div class="command-table" role="table" aria-label="Lookup commands">
+            <div class="command-row" role="row">
+              <div class="command-name" role="cell"><code>hackatime --lookup &lt;username&gt;</code></div>
+              <div class="command-description" role="cell">Shows public stats for another user.</div>
+            </div>
+            <div class="command-row" role="row">
+              <div class="command-name" role="cell"><code>hackatime --lookup &lt;username&gt; -g</code></div>
+              <div class="command-description" role="cell">Shows that user's coding graph.</div>
+            </div>
+            <div class="command-row" role="row">
+              <div class="command-name" role="cell"><code>hackatime --lookup &lt;username&gt; --projects --year</code></div>
+              <div class="command-description" role="cell">Shows that user's yearly top projects.</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="doc-section" id="settings">
+          <h2>Settings</h2>
+          <div class="command-table" role="table" aria-label="Settings commands">
+            <div class="command-row" role="row">
+              <div class="command-name" role="cell"><code>hackatime settings</code></div>
+              <div class="command-description" role="cell">Shows the current saved settings.</div>
+            </div>
+            <div class="command-row" role="row">
+              <div class="command-name" role="cell"><code>hackatime settings color</code></div>
+              <div class="command-description" role="cell">Opens the color picker.</div>
+            </div>
+            <div class="command-row" role="row">
+              <div class="command-name" role="cell"><code>hackatime settings clear toggle</code></div>
+              <div class="command-description" role="cell">Toggles terminal clearing on or off.</div>
+            </div>
+            <div class="command-row" role="row">
+              <div class="command-name" role="cell"><code>hackatime settings clear on|off</code></div>
+              <div class="command-description" role="cell">Sets terminal clearing explicitly.</div>
+            </div>
+          </div>
+        </section>
+      </article>
+    </main>
+  </div>
+  <script>
+    for (const button of document.querySelectorAll("[data-copy-target]")) {
+      button.addEventListener("click", async () => {
+        const target = document.getElementById(button.dataset.copyTarget);
+        if (!target) return;
+
+        try {
+          await navigator.clipboard.writeText(target.textContent.trim());
+          const originalLabel = button.textContent;
+          button.textContent = "Copied";
+          window.setTimeout(() => {
+            button.textContent = originalLabel;
+          }, 1200);
+        } catch {
+          button.textContent = "Failed";
+          window.setTimeout(() => {
+            button.textContent = "Copy";
+          }, 1200);
+        }
+      });
+    }
+  </script>
+</body>
+</html>
