@@ -5,8 +5,22 @@ edition = "2024"
 description = "Terminal CLI for viewing Hackatime stats with OAuth login"
 readme = "README.md"
 license = "MIT"
+repository = "https://github.com/hackclub-community/hackatime-cli"
+homepage = "https://hackatime.vercel.app"
+documentation = "https://hackatime.vercel.app/docs"
 keywords = ["hackatime", "cli", "terminal", "oauth", "stats"]
 categories = ["command-line-utilities"]
+include = [
+    "Cargo.toml",
+    "Cargo.lock",
+    "LICENSE",
+    "README.md",
+    "oauth.html",
+    "src/**/*.rs",
+    "website/**/*.html",
+    "website/**/*.css",
+    "website/vercel.json",
+]
 
 [[bin]]
 name = "hackatime"
